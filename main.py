@@ -22,25 +22,37 @@ class Ocean(Location):
 class Map(GridLayout):
     locations = ListProperty()
 
-    def build(self):
-        self.locations.append(Land())
-        self.locations.append(Land())
-        self.locations.append(Land())
-        self.locations.append(Ocean())
-        self.locations.append(Ocean())
-        self.locations.append(Ocean())
-        self.locations.append(Land())
-        self.locations.append(Land())
+    def rendering(self, char_map):
+        for char_row in char_map:
+            loc_row = []
+            for char in char_row:
+                if char == 'L':
+                    loc_row.append(Land())
+                elif char == 'O':
+                    loc_row.append(Ocean())
+            self.locations.append(loc_row)
 
-        self.cols = 5
-        for loc in self.locations:
-            self.add_widget(loc)
+    def build(self):
+        self.cols = len(self.locations)
+        for loc_row in self.locations:
+            for loc in loc_row:
+                self.add_widget(loc)
 
 
 class ConquestGame(RelativeLayout):
     map = ObjectProperty(None)
 
     def start(self):
+        self.map.rendering([
+             'LLLLLLLL',
+             'LLLLLLLL',
+             'LLLOOLLL',
+             'LLLOLLLL',
+             'LLOOLLOL',
+             'LOOLLLOL',
+             'LLOLLOOO',
+             'LLLLOOOO',
+        ])
         self.map.build()
 
 
