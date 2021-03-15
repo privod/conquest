@@ -1,9 +1,24 @@
 #:kivy 2.0.0
 
-#<Location>
+<Location>
+    canvas:
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
-#<Map>
-#    id: map_id
+<Land>
+    canvas:
+        Color:
+            rgba: 0, 1, 0, 0.8
+
+<Ocean>
+    canvas:
+        Color:
+            rgba: 0, 0, 1, 1.8
+
+<Map>
+    padding: 5
+    spacing: 5
 
 <ConquestGame>
     map: map_id
