@@ -10,12 +10,14 @@ from kivy.uix.widget import Widget
 
 
 class Location(AnchorLayout):
-    pass
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            game: ConquestGame = self.parent.parent
+            game.emperor.pos = game.map.locations[1][1].pos
 
 
 class Land(Location):
     pass
-
 
 class Province(Land):
     pass
@@ -63,6 +65,8 @@ class Map(GridLayout):
 
 class ConquestGame(RelativeLayout):
     map = ObjectProperty(None)
+    capital = ObjectProperty(None)
+    emperor = ObjectProperty(None)
 
     def start(self):
         self.map.rendering([
@@ -76,8 +80,10 @@ class ConquestGame(RelativeLayout):
              'LLLLOOOO',
         ])
         capital_loc = self.map.locations[2][2]
-        capital_loc.add_widget(Capital())
-        capital_loc.add_widget(Emperor(text='I'))
+        self.capital = Capital()
+        capital_loc.add_widget(self.capital)
+        self.emperor = Emperor(text='I')
+        capital_loc.add_widget(self.emperor)
         self.map.locations[1][2].add_widget(Legion(text='II'))
         self.map.build()
 
