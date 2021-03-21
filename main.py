@@ -13,11 +13,16 @@ class Location(AnchorLayout):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             game: ConquestGame = self.parent.parent
-            game.emperor.pos = game.map.locations[1][1].pos
+
+            # game.current_legion.location.remove_widget(game.current_legion)
+            map: Map = game.map
+            map.locations[2][2].remove_widget(game.emperor)
+            game.map.locations[1][1].add_widget(game.emperor)
 
 
 class Land(Location):
     pass
+
 
 class Province(Land):
     pass
@@ -28,7 +33,12 @@ class Ocean(Location):
 
 
 class GameObject(Label):
-    pass
+    location = ObjectProperty(None)
+
+    def __init__(self, location, **kwargs):
+        super(GameObject, self).__init__(**kwargs)
+        self.location = location
+        self.location.add_widget(self)
 
 
 class Legion(GameObject):
@@ -67,6 +77,7 @@ class ConquestGame(RelativeLayout):
     map = ObjectProperty(None)
     capital = ObjectProperty(None)
     emperor = ObjectProperty(None)
+    current_legion = ObjectProperty(None)
 
     def start(self):
         self.map.rendering([
@@ -79,13 +90,11 @@ class ConquestGame(RelativeLayout):
              'LLOLLOOO',
              'LLLLOOOO',
         ])
-        capital_loc = self.map.locations[2][2]
-        self.capital = Capital()
-        capital_loc.add_widget(self.capital)
-        self.emperor = Emperor(text='I')
-        capital_loc.add_widget(self.emperor)
-        self.map.locations[1][2].add_widget(Legion(text='II'))
+        self.capital = Capital(self.map.locations[2][2])
+        self.emperor = Emperor(self.map.locations[2][1], text='I')
+        self.current_legion = self.emperor
         self.map.build()
+
 
 class ConquestApp(App):
     def build(self):
