@@ -54,26 +54,28 @@ class Ocean(Location):
 
 # --- Game objects -----------------------------------------------------------------------------------------------------
 class GameObject(Label):
-    location = ObjectProperty(None)
+    # location = ObjectProperty(None)
 
     def __init__(self, location: Location, **kwargs):
         super(GameObject, self).__init__(**kwargs)
         self.set_location(location)
 
+    def get_location(self):
+        return self.parent
+
     def set_location(self, location: Location):
-        if self.parent is not None:
-            self.location.remove_widget(self)
-        self.location = location
-        self.location.add_widget(self)
+        if self.get_location() is not None:
+            self.get_location().remove_widget(self)
+        location.add_widget(self)
 
     def get_cell(self):
-        return self.location.get_cell()
+        return self.get_location().get_cell()
 
     def get_map(self):
-        return self.location.get_map()
+        return self.get_location().get_map()
 
     def get_game(self):
-        return self.location.get_game()
+        return self.get_location().get_game()
 
 
 class Legion(GameObject):
@@ -81,7 +83,7 @@ class Legion(GameObject):
     move_count = ObjectProperty(1)
 
     def calc_dest_location(self, geo_pos):
-        cur_x, cur_y = self.location.geo_pos
+        cur_x, cur_y = self.get_location().geo_pos
         dest_x, dest_y = geo_pos
 
         remove_x = dest_x - cur_x
@@ -94,34 +96,31 @@ class Legion(GameObject):
             return locations[cur_x][cur_y + sign(remove_y)]
 
     def decrement_move_count(self):
-        self.move_count -= self.location.cost_move_count
+        self.move_count -= self.get_location().cost_move_count
+
+    # def annex(self):    # TODO: Должно бы не сдесь, по видимому в Cell
+    #     location = Province(self.get_location().geo_pos)
+    #     self.get_cell().set_location(location)
+    #     self.set_location(location)
 
     def battle(self):
-        location_before_battle = self.location
-        geo_pos = self.location.geo_pos
-        x, y = geo_pos
-
-        location = Province(geo_pos)
-        cell = self.get_cell()
-        cell.remove_widget(self.location)
-        cell.add_widget(location)
-        cell.get_map().locations[x][y] = location
-        self.set_location(location)
+        location_before_battle = self.get_location()
+        self.annex()
 
     def move(self, geo_pos):
-        dest_location:Location = self.calc_dest_location(geo_pos)
+        dest_location: Location = self.calc_dest_location(geo_pos)
         if not dest_location.can_go:
             return
 
         self.set_location(dest_location)
-        if self.location.is_enemy:
+        if self.get_location().is_enemy:
             self.battle()
         self.decrement_move_count()
 
 
 class Emperor(Legion):
     def decrement_move_count(self):
-        if self.location.is_enemy:
+        if self.get_location().is_enemy:
             super(Emperor, self).decrement_move_count()
 
 
@@ -136,6 +135,22 @@ class Cell(AnchorLayout):
 
     def get_game(self):
         return self.get_map().parent
+
+    def get_location(self):
+        return self.children[0]
+
+    def set_location(self, location: Location):
+        if self.get_location() is not None:
+            self.remove_widget(self.get_location())
+        self.add_widget(location)
+
+        x, y = self.get_location().geo_pos
+        self.get_map().locations[x][y] = location
+
+    def annex(self):
+        location = Province(self.get_location().geo_pos)
+        self.get_cell().set_location(location)
+        self.set_location(location)
 
 
 class Map(GridLayout):
@@ -170,11 +185,18 @@ class ConquestGame(RelativeLayout):
     current_legion = ObjectProperty(None)
     provinces = ListProperty()
 
-    def move(self, geo_pos):
-        self.current_legion.move(geo_pos)
+    # def move(self, geo_pos):
+    #     self.current_legion.move(geo_pos)
+    #
+    #     # if self.current_legion.get_location() is :
 
-        # if self.current_legion.location is :
+    def set_capital(self, geo_pos):
+        x, y = geo_pos
+        location = self.map.locations[x][y]
 
+        self.capital = Capital(location)
+        self.emperor = Emperor(self.capital.get_location(), text='I')
+        self.current_legion = self.emperor
 
 
     def start(self):
@@ -191,7 +213,7 @@ class ConquestGame(RelativeLayout):
         ])
         self.map.build()
         self.capital = Capital(self.map.locations[2][2])
-        self.emperor = Emperor(self.capital.location, text='I')
+        self.emperor = Emperor(self.capital.get_location(), text='I')
         self.current_legion = self.emperor
 
 
