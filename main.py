@@ -1,12 +1,9 @@
 from kivy.app import App
 from kivy.properties import ListProperty, ObjectProperty, ColorProperty
 from kivy.uix.anchorlayout import AnchorLayout
-from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.screenmanager import Screen
-from kivy.uix.widget import Widget
 from numpy import sign
 
 
@@ -33,9 +30,6 @@ class Location(AnchorLayout):
 
 
 class Land(Location):
-    # def on_arrival(self, legion):
-    #     legion.on_arriv
-    #     legion.battle()
     pass
 
 
@@ -49,7 +43,6 @@ class Ocean(Location):
 
 # --- Game objects -----------------------------------------------------------------------------------------------------
 class GameObject(Label):
-    # location = ObjectProperty(None)
 
     def __init__(self, location: Location, **kwargs):
         super(GameObject, self).__init__(**kwargs)
@@ -92,11 +85,6 @@ class Legion(GameObject):
     def decrement_move_count(self):
         self.move_count -= self.get_location().cost_move_count
 
-    # def annex(self):    # TODO: Должно бы не сдесь, по видимому в Cell
-    #     location = Province(self.get_location().geo_pos)
-    #     self.get_cell().set_location(location)
-    #     self.set_location(location)
-
     def battle(self):
         location_before_battle = self.get_location()
         self.get_cell().annex()
@@ -125,8 +113,6 @@ class Capital(GameObject):
 
 # ----------------------------------------------------------------------------------------------------------------------
 class Cell(AnchorLayout):
-    # geo_pos = ListProperty([0, 0])
-
     def get_map(self) -> "Map":
         return self.parent
 
@@ -149,9 +135,6 @@ class Cell(AnchorLayout):
             self.remove_widget(self.get_location())
         self.add_widget(location)
 
-        # x, y = self.get_location().get_geo_pos()
-        # self.get_map().locations[x][y] = location
-
     def annex(self):
         location_before_annex = self.get_location()
         self.set_location(Province())
@@ -160,11 +143,6 @@ class Cell(AnchorLayout):
 
 
 class Map(GridLayout):
-    # locations = ListProperty()
-
-    # def get_game(self):
-    #     return self.parent
-
     def get_cell(self, geo_pos) -> Cell:
         x, y = geo_pos
         num = len(self.children) - ((y - 1) * self.cols + x)
@@ -183,19 +161,6 @@ class Map(GridLayout):
                 cell = Cell()
                 cell.add_widget(location)
                 self.add_widget(cell)
-
-    # def add_cell(self):
-    #     cell = Cell()
-    #     self.add_widget(cell)
-    #     cell.geo_pos = [x, y]
-    #     return cell
-
-    # def build(self):
-    #     self.cols = len(self.locations[0])
-    #     for loc_row in self.locations:
-    #         for loc in loc_row:
-    #             cell = self.add_cell()
-    #             cell.add_widget(loc)
 
 
 class ConquestGame(RelativeLayout):
