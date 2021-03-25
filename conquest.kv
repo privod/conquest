@@ -43,8 +43,31 @@
     padding: 5
     spacing: 5
 
+<Info>
+    year: 0
+    taxes: 0
+    size_hint: 1, 0.1
+    canvas:
+        Color:
+            rgb: 0, 0, 0, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    Label:
+        text: 'Год: {}'.format(root.year)
+
+    Label:
+        text: 'Налоги: {}'.format(root.taxes)
+
 <ConquestGame>
+    orientation: 'vertical'
+
     map: map_id
+    info: info_id
 
     Map:
         id: map_id
+
+    Info:
+        id:info_id
