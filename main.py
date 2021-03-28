@@ -5,6 +5,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.widget import Widget
 from numpy import sign
 
 
@@ -26,7 +27,7 @@ class Location(AnchorLayout):
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
-            game: ConquestGame = self.get_game()            # game.current_legion.location.remove_widget(game.current_legion)
+            game: ConquestGame = self.get_game()
             game.move(self.get_cell().get_geo_pos())
 
 
@@ -75,8 +76,8 @@ class Legion(GameObject):
     move_count: int = ObjectProperty(1)
     cost: int = ObjectProperty(5)
 
-    def is_current(self) -> bool:
-        return self.get_game().current_legion == self
+    def is_turn(self) -> bool:
+        return self.get_game().turn_legion.get() == self
 
     def calc_dest(self, geo_pos):
         cur_x, cur_y = self.get_cell().get_geo_pos()
@@ -119,6 +120,27 @@ class Emperor(Legion):
 
 class Capital(GameObject):
     tax: int = ObjectProperty(4)
+
+
+class TurnLegionFlag(Widget):
+    pass
+
+
+class TurnLegion(object):
+    flag: TurnLegionFlag
+    legion: Legion
+
+    def __init__(self):
+        self.flag = TurnLegionFlag()
+
+    def set(self, legion: Legion):
+        if self.flag.parent is not None:
+            self.legion.remove_widget(self.flag)
+        self.legion = legion
+        self.legion.add_widget(self.flag)
+
+    def get(self) -> Legion:
+        return self.legion
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -185,7 +207,8 @@ class ConquestGame(BoxLayout):
     info: Info = ObjectProperty(None)
     capital: Capital = ObjectProperty(None)
     emperor: Emperor = ObjectProperty(None)
-    current_legion: Legion = ObjectProperty(None)
+    turn_legion: TurnLegion = ObjectProperty(None)
+    # current_legion_flag: CurrentLegionFlag = ObjectProperty(CurrentLegionFlag())
     army: list[Legion] = ListProperty([])
     army_move: list[Legion] = ListProperty([])
     provinces: list[Province] = ListProperty()
@@ -197,8 +220,13 @@ class ConquestGame(BoxLayout):
         self.capital = Capital(location)
         self.emperor = Emperor(location, 'I')
         self.army.append(self.emperor)
-        self.current_legion = self.emperor
+        self.turn_legion.set(self.emperor)
         self.round()
+
+    # def set_turn_legion(self, legion:Legion):
+    #     self.turn_legion = legion
+    #     self.turn_legion.add_widget(self.current_legion_flag)
+
 
     def round(self):
         army_cost: int = 0
@@ -222,11 +250,11 @@ class ConquestGame(BoxLayout):
         self.info.year += 1
 
     def move(self, geo_pos):
-        self.current_legion.move(geo_pos)
-        if self.current_legion.move_count == 0:
-            self.army_move.remove(self.current_legion)
+        self.turn_legion.get().move(geo_pos)
+        if self.turn_legion.get().move_count == 0:
+            self.army_move.remove(self.turn_legion.get())
         if len(self.army_move) > 0:
-            self.current_legion = self.army_move[-1]
+            self.turn_legion.set(self.army_move[-1])
         else:
             self.round()
 
@@ -242,6 +270,7 @@ class ConquestGame(BoxLayout):
             'LLLLOOOOOO',
             # 'LLLLLLLLLL',
         ])
+        self.turn_legion = TurnLegion()
         self.set_capital([2, 3])
 
 
