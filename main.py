@@ -10,7 +10,7 @@ from numpy import sign
 
 # --- Locations --------------------------------------------------------------------------------------------------------
 class Location(AnchorLayout):
-    background_color = ListProperty([0, 1, 0, 0.8])
+    background_color = ListProperty([0, 0, 0, 0])
     can_go: bool = ObjectProperty(True)
     is_enemy: bool = ObjectProperty(True)
     cost_move_count: int = ObjectProperty(1)
@@ -44,11 +44,14 @@ class Ocean(Location):
 
 
 # --- Game objects -----------------------------------------------------------------------------------------------------
-class GameObject(Label):
+class GameObject(AnchorLayout):
+    background_color = ListProperty([0, 0, 0, 0])
+    label_text: str = ObjectProperty('')
 
-    def __init__(self, location: Location, **kwargs):
+    def __init__(self, location: Location, label_text: str = '', **kwargs):
         super(GameObject, self).__init__(**kwargs)
         self.set_location(location)
+        self.label_text = label_text
 
     def get_location(self) -> Location:
         return self.parent
@@ -69,9 +72,11 @@ class GameObject(Label):
 
 
 class Legion(GameObject):
-    background_color = ListProperty([0, 0, 0, 0.8])
     move_count: int = ObjectProperty(1)
     cost: int = ObjectProperty(5)
+
+    def is_current(self) -> bool:
+        return self.get_game().current_legion == self
 
     def calc_dest(self, geo_pos):
         cur_x, cur_y = self.get_cell().get_geo_pos()
@@ -150,8 +155,8 @@ class Cell(AnchorLayout):
 
 
 class Info(BoxLayout):
-    year: ObjectProperty(0)
-    taxes: ObjectProperty(0)
+    year = ObjectProperty(0)
+    taxes = ObjectProperty(0)
 
 
 class Map(GridLayout):
@@ -185,6 +190,16 @@ class ConquestGame(BoxLayout):
     army_move: list[Legion] = ListProperty([])
     provinces: list[Province] = ListProperty()
 
+    def set_capital(self, geo_pos):
+        cell: Cell = self.map.get_cell(geo_pos)
+        cell.annex()
+        location: Location = cell.get_location()
+        self.capital = Capital(location)
+        self.emperor = Emperor(location, 'I')
+        self.army.append(self.emperor)
+        self.current_legion = self.emperor
+        self.round()
+
     def round(self):
         army_cost: int = 0
         for legion in self.army:
@@ -199,7 +214,7 @@ class ConquestGame(BoxLayout):
         if free_tax < 0:
             self.army.pop()
         elif free_tax >= 5:
-            new_legion = Legion(self.capital.get_location(), text=str(len(self.army) + 1))
+            new_legion = Legion(self.capital.get_location(), label_text=str(len(self.army) + 1))
             self.army.append(new_legion)
 
         self.army_move = self.army.copy()
@@ -211,19 +226,9 @@ class ConquestGame(BoxLayout):
         if self.current_legion.move_count == 0:
             self.army_move.remove(self.current_legion)
         if len(self.army_move) > 0:
-            self.current_legion = self.army_move[0]
+            self.current_legion = self.army_move[-1]
         else:
             self.round()
-
-    def set_capital(self, geo_pos):
-        cell: Cell = self.map.get_cell(geo_pos)
-        cell.annex()
-        location: Location = cell.get_location()
-        self.capital = Capital(location)
-        self.emperor = Emperor(location, text='I')
-        self.army.append(self.emperor)
-        self.current_legion = self.emperor
-        self.round()
 
     def start(self):
         self.map.build([
