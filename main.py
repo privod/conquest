@@ -227,7 +227,6 @@ class ConquestGame(BoxLayout):
     #     self.turn_legion = legion
     #     self.turn_legion.add_widget(self.current_legion_flag)
 
-
     def round(self):
         army_cost: int = 0
         for legion in self.army:
@@ -253,10 +252,10 @@ class ConquestGame(BoxLayout):
         self.turn_legion.get().move(geo_pos)
         if self.turn_legion.get().move_count == 0:
             self.army_move.remove(self.turn_legion.get())
-        if len(self.army_move) > 0:
-            self.turn_legion.set(self.army_move[-1])
-        else:
+        if len(self.army_move) == 0:
             self.round()
+
+        self.turn_legion.set(self.army_move[0])
 
     def start(self):
         self.map.build([
