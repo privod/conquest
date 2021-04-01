@@ -13,6 +13,9 @@ from numpy import sign
 
 
 # --- Locations --------------------------------------------------------------------------------------------------------
+from roman import toRoman
+
+
 class Location(AnchorLayout):
     background_color = ListProperty([0, 0, 0, 0])
     can_go: bool = ObjectProperty(True)
@@ -105,6 +108,9 @@ class GameObject(AnchorLayout):
 class Legion(GameObject):
     move_count: int = ObjectProperty(1)
     cost: int = ObjectProperty(5)
+
+    def __init__(self, location: Location, num: int, **kwargs):
+        super(Legion, self).__init__(location, toRoman(num), **kwargs)
 
     def is_turn(self) -> bool:
         return self.get_game().turn_legion.get() == self
@@ -262,7 +268,7 @@ class ConquestGame(BoxLayout):
         cell.annex()
         location: Location = cell.get_location()
         self.capital = Capital(location)
-        self.emperor = Emperor(location, 'I')
+        self.emperor = Emperor(location, 1)
         self.army.append(self.emperor)
         self.turn_legion.set(self.emperor)
         self.round()
@@ -301,7 +307,7 @@ class ConquestGame(BoxLayout):
         if free_tax < 0:
             self.army.pop()
         elif free_tax >= 5:
-            new_legion = Legion(self.capital.get_location(), label_text=str(len(self.army) + 1))
+            new_legion = Legion(self.capital.get_location(), num=len(self.army) + 1)
             self.army.append(new_legion)
 
         self.army_move = self.army.copy()
