@@ -1,3 +1,6 @@
+from collections import Iterable, Generator
+from random import random
+
 from kivy.app import App
 from kivy.properties import ListProperty, ObjectProperty, ColorProperty
 from kivy.uix.anchorlayout import AnchorLayout
@@ -15,6 +18,7 @@ class Location(AnchorLayout):
     can_go: bool = ObjectProperty(True)
     is_enemy: bool = ObjectProperty(True)
     cost_move_count: int = ObjectProperty(1)
+    can_barbarian_attack: bool = ObjectProperty(False)
 
     def get_cell(self) -> "Cell":
         return self.parent
@@ -30,14 +34,39 @@ class Location(AnchorLayout):
             game: ConquestGame = self.get_game()
             game.move(self.get_cell().get_geo_pos())
 
+    def get_border_lands(self) -> Generator["Location"]:
+        x, y = self.get_cell().get_geo_pos()
+        print('geo pos: {}'.format([x, y]))
+        for dx, dy in [[0, -1], [1, 0], [0, 1], [-1, 0]]:
+            print('delta: {}'.format([dx, dy]))
+            cell = self.get_map().get_cell([x + dx, y + dy])
+            if cell is not None:
+                yield cell.get_location()
+
+    def get_border_barbarian_attack(self) -> Generator["Location"]:
+        for location in self.get_border_lands():
+            if location.can_barbarian_attack:
+                yield location
+
+    def get_located_objects(self) -> Generator["GameObject"]:
+        for game_object in self.children:
+            yield game_object
+
+    def is_protected(self) -> bool:
+        for game_object in self.get_located_objects():
+            if game_object.protects:
+                return True
+        return False
+
 
 class Land(Location):
-    pass
+    can_barbarian_attack: bool = ObjectProperty(True)
 
 
 class Province(Land):
     is_enemy: bool = ObjectProperty(False)
     tax: int = ObjectProperty(1)
+    can_barbarian_attack: bool = ObjectProperty(False)
 
 
 class Ocean(Location):
@@ -48,6 +77,7 @@ class Ocean(Location):
 class GameObject(AnchorLayout):
     background_color = ListProperty([0, 0, 0, 0])
     label_text: str = ObjectProperty('')
+    protects: bool = ObjectProperty(True)
 
     def __init__(self, location: Location, label_text: str = '', **kwargs):
         super(GameObject, self).__init__(**kwargs)
@@ -102,7 +132,7 @@ class Legion(GameObject):
     def move(self, geo_pos):
         dest_location: Location = self.get_map().get_cell(self.calc_dest(geo_pos)).get_location()
 
-        if not dest_location.can_go:
+        if dest_location is None or not dest_location.can_go:
             return
 
         self.set_location(dest_location)
@@ -122,6 +152,7 @@ class Capital(GameObject):
     tax: int = ObjectProperty(4)
 
 
+# --- Свойства ---------------------------------------------------------------------------------------------------------
 class TurnLegionFlag(Widget):
     pass
 
@@ -168,12 +199,18 @@ class Cell(AnchorLayout):
         self.add_widget(location)
 
     def annex(self):
-        location_before_annex = self.get_location()
         new_province: Province = Province()
-        self.set_location(new_province)
-        for obj in location_before_annex.children:
+        for obj in self.get_location().children:
             obj.set_location(new_province)
+        self.set_location(new_province)
         self.get_game().provinces.append(new_province)
+
+    def separation(self):
+        self.get_game().provinces.remove(self.get_location())
+        land: Land = Land()
+        for obj in self.get_location().children:
+            obj.set_location(land)
+        self.set_location(land)
 
 
 class Info(BoxLayout):
@@ -184,8 +221,15 @@ class Info(BoxLayout):
 class Map(GridLayout):
     def get_cell(self, geo_pos) -> Cell:
         x, y = geo_pos
+
+        if x <= 0 or x > self.cols or y <= 0 or y > (len(self.children) / self.cols):
+            return None
+
         num = len(self.children) - ((y - 1) * self.cols + x)
-        return self.children[num]
+        if len(self.children) > num:
+            return self.children[num]
+        else:
+            return None
 
     def build(self, char_map):
         for char_row in char_map:
@@ -227,7 +271,23 @@ class ConquestGame(BoxLayout):
     #     self.turn_legion = legion
     #     self.turn_legion.add_widget(self.current_legion_flag)
 
+    def barbarian_raids(self):
+        for province in self.provinces:
+            if province.is_protected():
+                continue
+
+            for land in province.get_border_barbarian_attack():
+                rnd = random()
+                if rnd < 0.05:
+                    print('Нападение варваров!')
+                    print('Уничтожена провинция {}'.format(province.get_cell().get_geo_pos()))
+                    print('Нападегние из локации {}'.format(land.get_cell().get_geo_pos()))
+                    province.get_cell().separation()
+                    break
+
     def round(self):
+        self.barbarian_raids()
+
         army_cost: int = 0
         for legion in self.army:
             legion.move_count = legion.__class__.move_count.defaultvalue
@@ -259,18 +319,26 @@ class ConquestGame(BoxLayout):
 
     def start(self):
         self.map.build([
-            'LOLLLLLLLL',
-            'LLLLLLLLLL',
-            'LLLOOLLLLL',
-            'LLLOLLLLLL',
-            'LLOOLLOLLL',
-            'LOOLLLOLLL',
-            'LLOLLOOOLL',
-            'LLLLOOOOOO',
-            # 'LLLLLLLLLL',
+            'LOLLLLLLLLLLLLLLLLLL',
+            'LLLLLLLLLLLLLLLOLLLL',
+            'LLLOOLLLLLLLLLOOOLLL',
+            'LLLOLLLLLLLLLLLLOOLL',
+            'LLOOLLOLLLLLLLLLLLLL',
+            'LOOLLLOLLLLLLLLLLLLL',
+            'LLOLLOOOLLLLLLLLLLLL',
+            'LLLLLLLLLLLLLLLLOLLL',
+            'LLLLLLLLLLLLLLLOOLLL',
+            'LLLLLLLLLLLLLOOLLLLL',
+            'LLLLLLLLOOOOOOOOOOOO',
+            'LLLLLLLLLOOOOLLLLLLL',
+            'LLLLLLLLLLLOOLLLLLLL',
+            'LLLLLLLLLLLLLLLLLLLL',
+            'LLLLLLLLLLLLLLLLLLLL',
+            'LLOLLOOOLLLLLLLLLLLL',
+            'LLLLOOOOOOOOOOOOOOOO',
         ])
         self.turn_legion = TurnLegion()
-        self.set_capital([2, 3])
+        self.set_capital([3, 16])
 
 
 class ConquestApp(App):
