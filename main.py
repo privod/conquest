@@ -1,7 +1,9 @@
 from collections import Iterable, Generator
 from random import random
 
+from kivy.animation import Animation
 from kivy.app import App
+from kivy.graphics.vertex_instructions import Triangle
 from kivy.properties import ListProperty, ObjectProperty, ColorProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
@@ -10,12 +12,10 @@ from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import Widget
 from numpy import sign
-
-
-# --- Locations --------------------------------------------------------------------------------------------------------
 from roman import toRoman
 
 
+# --- Locations --------------------------------------------------------------------------------------------------------
 class Location(AnchorLayout):
     background_color = ListProperty([0, 0, 0, 0])
     can_go: bool = ObjectProperty(True)
@@ -39,9 +39,9 @@ class Location(AnchorLayout):
 
     def get_border_lands(self) -> Generator["Location"]:
         x, y = self.get_cell().get_geo_pos()
-        print('geo pos: {}'.format([x, y]))
+        # print('geo pos: {}'.format([x, y]))
         for dx, dy in [[0, -1], [1, 0], [0, 1], [-1, 0]]:
-            print('delta: {}'.format([dx, dy]))
+            # print('delta: {}'.format([dx, dy]))
             cell = self.get_map().get_cell([x + dx, y + dy])
             if cell is not None:
                 yield cell.get_location()
@@ -156,6 +156,10 @@ class Emperor(Legion):
 
 class Capital(GameObject):
     tax: int = ObjectProperty(4)
+
+
+class BarbarianAttack(Widget):
+    pass
 
 
 # --- Свойства ---------------------------------------------------------------------------------------------------------
@@ -285,6 +289,12 @@ class ConquestGame(BoxLayout):
             for land in province.get_border_barbarian_attack():
                 rnd = random()
                 if rnd < 0.05:
+                    barbarian_attack = BarbarianAttack()
+                    land.add_widget(barbarian_attack)
+                    anim = Animation(x=province.x, y=province.y)
+                    anim.start(barbarian_attack)
+                    # province.get_cell().get_location().canvas.add(Triangle(size=()))
+
                     print('Нападение варваров!')
                     print('Уничтожена провинция {}'.format(province.get_cell().get_geo_pos()))
                     print('Нападегние из локации {}'.format(land.get_cell().get_geo_pos()))
