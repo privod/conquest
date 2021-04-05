@@ -158,7 +158,7 @@ class Capital(GameObject):
     tax: int = ObjectProperty(4)
 
 
-class BarbarianAttack(Widget):
+class Barbarian(AnchorLayout):
     pass
 
 
@@ -228,6 +228,32 @@ class Info(BoxLayout):
     taxes = ObjectProperty(0)
 
 
+class BarbarianAttack(object):
+    anim: Animation
+    land_from: Land
+    province_to: Province
+    barbarian: Barbarian
+
+    def __init__(self, land_from: Land, province_to: Province):
+        self.land_from = land_from
+        self.province_to = province_to
+
+    def start(self):
+        self.barbarian = Barbarian()
+        self.land_from.add_widget(self.barbarian)
+        self.barbarian.pos = self.land_from.pos
+
+        self.anim = Animation(x=self.province_to.x, y=self.province_to.y, duration=0.2)
+        self.anim.on_complete = self.complete
+        self.anim.start(self.barbarian)
+
+    def complete(self, widget: Widget):
+        Animation.on_complete(self.anim, widget)
+        self.province_to.get_cell().separation()
+        self.land_from.remove_widget(self.barbarian)
+
+
+
 class Map(GridLayout):
     def get_cell(self, geo_pos) -> Cell:
         x, y = geo_pos
@@ -289,16 +315,18 @@ class ConquestGame(BoxLayout):
             for land in province.get_border_barbarian_attack():
                 rnd = random()
                 if rnd < 0.05:
-                    barbarian_attack = BarbarianAttack()
-                    land.add_widget(barbarian_attack)
-                    anim = Animation(x=province.x, y=province.y)
-                    anim.start(barbarian_attack)
-                    # province.get_cell().get_location().canvas.add(Triangle(size=()))
-
+                    barbarian_attack = BarbarianAttack(land, province)
+                    barbarian_attack.start()
                     print('Нападение варваров!')
-                    print('Уничтожена провинция {}'.format(province.get_cell().get_geo_pos()))
+                    print('Разарена провинция {}'.format(province.get_cell().get_geo_pos()))
                     print('Нападегние из локации {}'.format(land.get_cell().get_geo_pos()))
-                    province.get_cell().separation()
+                    # barbarian_attack = Barbarian()
+                    # land.add_widget(barbarian_attack)
+                    # # province.get_cell().get_location().canvas.add(Triangle(size=()))
+                    #
+                    # province.get_cell().separation()
+                    # # anim = Animation(x=province.x, y=province.y)
+                    # # anim.start(barbarian_attack)
                     break
 
     def round(self):

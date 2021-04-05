@@ -59,12 +59,15 @@
             pos: self.pos
             size: self.size
 
-<BarbarianAttack>
-    canvas:
+<Barbarian>
+    canvas.before:
         Color:
             rgba: 0, 0, 0, 1
         Triangle:
             points: self.x, self.y, self.x + (self.width // 2), self.y + self.height,  self.x + self.width, self.y
+
+    Label:
+        text: '🕱'
 
 <Cell>
     anchor_x: 'center'
