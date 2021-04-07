@@ -141,15 +141,11 @@ class Legion(GameObject):
         if dest_location is None or not dest_location.can_go:
             return
 
-        # self.set_location(dest_location)
-        # if self.get_location().is_enemy:
-        #     self.battle()
-        # else:
-        #     self.decrement_move_count()
-
-        legion_move = LegionMove(dest_location)
-        legion_move.start(self)
-
+        self.set_location(dest_location)
+        if self.get_location().is_enemy:
+            self.battle()
+        else:
+            self.decrement_move_count()
 
 
 class Emperor(Legion):
@@ -261,19 +257,6 @@ class BarbarianAttack(Move):
         Move.complete(self, widget)
         self.to.get_cell().separation()
         self.obj.parent.remove_widget(self.obj)
-
-
-class LegionMove(Move):
-
-    def complete(self, widget: Widget):
-        Move.complete(self, widget)
-        # self.to.get_cell().separation()
-        # self._from_.remove_widget(self.obj)
-        self.obj.set_location(self.to)
-        if self.to.is_enemy:
-            self.obj.battle()
-        else:
-            self.obj.decrement_move_count()
 
 
 class Map(GridLayout):
