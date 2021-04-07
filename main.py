@@ -141,11 +141,15 @@ class Legion(GameObject):
         if dest_location is None or not dest_location.can_go:
             return
 
-        self.set_location(dest_location)
-        if self.get_location().is_enemy:
-            self.battle()
-        else:
-            self.decrement_move_count()
+        # self.set_location(dest_location)
+        # if self.get_location().is_enemy:
+        #     self.battle()
+        # else:
+        #     self.decrement_move_count()
+
+        legion_move = LegionMove(dest_location)
+        legion_move.start(self)
+
 
 
 class Emperor(Legion):
@@ -228,30 +232,48 @@ class Info(BoxLayout):
     taxes = ObjectProperty(0)
 
 
-class BarbarianAttack(object):
+class Move(object):
     anim: Animation
-    land_from: Land
-    province_to: Province
-    barbarian: Barbarian
+    # _from_: Location
+    to: Location
+    obj: GameObject
 
-    def __init__(self, land_from: Land, province_to: Province):
-        self.land_from = land_from
-        self.province_to = province_to
+    # def __init__(self, _from_: Location, to: Location):
+    def __init__(self, to: Location):
+        self.to = to
 
-    def start(self):
-        self.barbarian = Barbarian()
-        self.land_from.add_widget(self.barbarian)
-        self.barbarian.pos = self.land_from.pos
-
-        self.anim = Animation(x=self.province_to.x, y=self.province_to.y, duration=0.2)
+    def start(self, obj: GameObject):
+        self.obj = obj
+        self.anim = Animation(x=self.to.x, y=self.to.y, duration=0.3)
         self.anim.on_complete = self.complete
-        self.anim.start(self.barbarian)
+        self.anim.start(self.obj)
 
     def complete(self, widget: Widget):
         Animation.on_complete(self.anim, widget)
-        self.province_to.get_cell().separation()
-        self.land_from.remove_widget(self.barbarian)
 
+
+class BarbarianAttack(Move):
+
+    def start(self, obj: GameObject):
+        Move.start(self, obj)
+
+    def complete(self, widget: Widget):
+        Move.complete(self, widget)
+        self.to.get_cell().separation()
+        self.obj.parent.remove_widget(self.obj)
+
+
+class LegionMove(Move):
+
+    def complete(self, widget: Widget):
+        Move.complete(self, widget)
+        # self.to.get_cell().separation()
+        # self._from_.remove_widget(self.obj)
+        self.obj.set_location(self.to)
+        if self.to.is_enemy:
+            self.obj.battle()
+        else:
+            self.obj.decrement_move_count()
 
 
 class Map(GridLayout):
@@ -315,8 +337,11 @@ class ConquestGame(BoxLayout):
             for land in province.get_border_barbarian_attack():
                 rnd = random()
                 if rnd < 0.05:
-                    barbarian_attack = BarbarianAttack(land, province)
-                    barbarian_attack.start()
+                    barbarian = Barbarian()
+                    land.add_widget(barbarian)
+                    barbarian.pos = land.pos
+                    barbarian_attack = BarbarianAttack(province)
+                    barbarian_attack.start(barbarian)
                     print('Нападение варваров!')
                     print('Разарена провинция {}'.format(province.get_cell().get_geo_pos()))
                     print('Нападегние из локации {}'.format(land.get_cell().get_geo_pos()))
