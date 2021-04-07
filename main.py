@@ -108,6 +108,7 @@ class GameObject(AnchorLayout):
 class Legion(GameObject):
     move_count: int = ObjectProperty(1)
     cost: int = ObjectProperty(5)
+    experience: int = ObjectProperty(0)
 
     def __init__(self, location: Location, num: int, **kwargs):
         super(Legion, self).__init__(location, toRoman(num), **kwargs)
@@ -130,16 +131,22 @@ class Legion(GameObject):
     def decrement_move_count(self):
         self.move_count -= self.get_location().cost_move_count
 
+    def increment_experience(self):
+        self.experience += 1
+
     def battle(self):
-        location_before_battle = self.get_location()
         self.decrement_move_count()
         self.get_cell().annex()
+        self.increment_experience()
 
     def move(self, geo_pos):
         dest_location: Location = self.get_map().get_cell(self.calc_dest(geo_pos)).get_location()
 
         if dest_location is None or not dest_location.can_go:
             return
+
+        if dest_location == self.get_location():
+            self.move_count = 0                     # Оставить легион на месте
 
         self.set_location(dest_location)
         if self.get_location().is_enemy:
@@ -226,6 +233,7 @@ class Cell(AnchorLayout):
 class Info(BoxLayout):
     year = ObjectProperty(0)
     taxes = ObjectProperty(0)
+    army: GridLayout = ObjectProperty(None)
 
 
 class Move(object):
@@ -359,6 +367,10 @@ class ConquestGame(BoxLayout):
         self.army_move = self.army.copy()
 
         self.info.year += 1
+
+        self.info.army.clear_widgets()
+        for legion in self.army:
+            self.info.army.add_widget(Label(text='{}: {}'.format(legion.label_text, legion.experience)))
 
     def move(self, geo_pos):
         self.turn_legion.get().move(geo_pos)

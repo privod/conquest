@@ -89,11 +89,19 @@
                 pos: self.pos
                 size: self.size
 
-    Label:
-        text: 'Год: {}'.format(root.year)
+    game: game_id
+    army: army_id
 
-    Label:
-        text: 'Налоги: {}'.format(root.taxes)
+    BoxLayout:
+        id: game_id
+        Label:
+            text: 'Год: {}'.format(root.year)
+        Label:
+            text: 'Налоги: {}'.format(root.taxes)
+
+    GridLayout:
+        id: army_id
+        rows: 3
 
 
 <ConquestGame>
