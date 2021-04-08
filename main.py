@@ -137,7 +137,16 @@ class Legion(GameObject):
     def battle(self):
         self.decrement_move_count()
         self.get_cell().annex()
-        self.increment_experience()
+        if random() < 0.25:
+            self.experience = 0
+            if self.__class__ == Emperor:
+                print('Имератор погиб в бою')
+                self.__class__ = Legion
+                self.get_game().civil_war()
+            else:
+                print('Легат погиб в бою')
+        else:
+            self.increment_experience()
 
     def move(self, geo_pos):
         dest_location: Location = self.get_map().get_cell(self.calc_dest(geo_pos)).get_location()
@@ -320,14 +329,20 @@ class ConquestGame(BoxLayout):
     #     self.turn_legion = legion
     #     self.turn_legion.add_widget(self.current_legion_flag)
 
+    def civil_war(self):
+
+        exp_army = sorted(self.army.copy(), key=lambda legion: legion.experience, reverse=True)
+        new_emperor = exp_army[0]
+        new_emperor.__class__ = Emperor
+
+
     def barbarian_raids(self):
         for province in self.provinces:
             if province.is_protected():
                 continue
 
             for land in province.get_border_barbarian_attack():
-                rnd = random()
-                if rnd < 0.05:
+                if random() < 0.05:
                     barbarian = Barbarian()
                     land.add_widget(barbarian)
                     barbarian.pos = land.pos
