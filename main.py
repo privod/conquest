@@ -1,15 +1,13 @@
-from collections import Iterable, Generator
 from random import random
+from collections.abc import Generator
 
 from kivy.animation import Animation
 from kivy.app import App
-from kivy.graphics.vertex_instructions import Triangle
-from kivy.properties import ListProperty, ObjectProperty, ColorProperty
+from kivy.properties import ListProperty, ObjectProperty
 from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
-from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.widget import Widget
 from numpy import sign
 from roman import toRoman
