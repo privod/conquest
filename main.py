@@ -110,6 +110,7 @@ class Legion(GameObject):
 
     def __init__(self, location: Location, num: int, **kwargs):
         super(Legion, self).__init__(location, toRoman(num), **kwargs)
+        self.num = num
 
     def is_turn(self) -> bool:
         return self.get_game().turn_legion.get() == self
@@ -139,8 +140,13 @@ class Legion(GameObject):
             self.experience = 0
             if self.__class__ == Emperor:
                 print('Имератор погиб в бою')
-                self.__class__ = Legion
-                self.get_game().civil_war()
+                game = self.get_game()
+                game.civil_war()
+                if game.emperor != self:
+                    new_legion_location = self.get_location()
+                    new_legion = Legion(new_legion_location, num=self.num)
+                    new_legion_location.remove_widget(self)
+                    game.army[game.army.index(self)] = new_legion
             else:
                 print('Легат погиб в бою')
         else:
@@ -243,7 +249,7 @@ class Info(BoxLayout):
     army: GridLayout = ObjectProperty(None)
 
 
-class Move(object):
+class Move:
     anim: Animation
     # _from_: Location
     to: Location
@@ -275,7 +281,7 @@ class BarbarianAttack(Move):
 
 
 class Map(GridLayout):
-    def get_cell(self, geo_pos) -> Cell:
+    def get_cell(self, geo_pos) -> Cell | None:
         x, y = geo_pos
 
         if x <= 0 or x > self.cols or y <= 0 or y > (len(self.children) / self.cols):
@@ -328,11 +334,16 @@ class ConquestGame(BoxLayout):
     #     self.turn_legion.add_widget(self.current_legion_flag)
 
     def civil_war(self):
-
         exp_army = sorted(self.army.copy(), key=lambda legion: legion.experience, reverse=True)
-        new_emperor = exp_army[0]
-        new_emperor.__class__ = Emperor
-
+        winner = exp_army[0]
+        if winner.__class__ != Emperor:
+            winner_location = winner.get_location()
+            winner_location.remove_widget(winner)
+            new_emperor = Emperor(winner_location, num=winner.num)
+            self.army[self.army.index(winner)] = new_emperor
+            if winner in self.army_move:
+                self.army_move[self.army_move.index(winner)] = new_emperor
+            self.emperor = new_emperor
 
     def barbarian_raids(self):
         for province in self.provinces:
